@@ -7,14 +7,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract and Move Files
+      - name: Extract and Find Project
         run: |
-          unzip -o kozmetik-envanteri.zip
-          # Fayllarin hansi qovluqda oldugunu deqiq mueyyen edirik
-          cd kozmetik-envanteri/kozmetik-envanteri/ || cd kozmetik-envanteri/ || echo "Qovluq tapilmadi"
-          chmod +x gradlew
-          # Butun fayllari ana qovluga cixaririq ki, GitHub onlari gorsun
-          cp -r . ../../ 2>/dev/null || cp -r . ../
+          # Bütün zip fayllarını açırıq
+          unzip -o kozmetik-envanteri.zip || unzip -o Layihe.zip || echo "Zip tapılmadı"
+          
+          # gradlew faylını bütün qovluqlarda axtarırıq
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "HATA: gradlew tapılmadı!"
+            ls -R
+            exit 1
+          fi
+          
+          # Tapılan yerə icazə veririk
+          chmod +x "$GRADLEW_PATH"
+          echo "PROJ_DIR=$(dirname "$GRADLEW_PATH")" >> $GITHUB_ENV
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -25,11 +34,11 @@ jobs:
 
       - name: Build APK
         run: |
-          chmod +x gradlew
+          cd ${{ env.PROJ_DIR }}
           ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: kosmetik-tetbiqi-hazirdir
+          name: tətbiq-hazırdır
           path: "**/build/outputs/apk/debug/*.apk"
