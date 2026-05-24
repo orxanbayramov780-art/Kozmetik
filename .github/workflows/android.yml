@@ -7,25 +7,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract and Locate Project
+      - name: Extract and Move Files
         run: |
-          # Movcud olan istenilen ZIP faylini acir
-          unzip -o *.zip || echo "ZIP acilmadi"
-          
-          # Gradlew faylini butun alt qovluqlarda axtarir
-          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "XETA: Layihe fayllari ZIP-in icinde tapilmadi!"
-            echo "Hazirda olan fayllar:"
-            ls -R
-            exit 1
-          fi
-          
-          # Tapilan qovluga icaze verir ve yolunu yadda saxlayir
-          chmod +x "$GRADLEW_PATH"
-          echo "PROJECT_ROOT=$(dirname "$GRADLEW_PATH")" >> $GITHUB_ENV
-          echo "GRADLEW_EXECUTABLE=$GRADLEW_PATH" >> $GITHUB_ENV
+          unzip -o kozmetik-envanteri.zip
+          # Fayllarin hansi qovluqda oldugunu deqiq mueyyen edirik
+          cd kozmetik-envanteri/kozmetik-envanteri/ || cd kozmetik-envanteri/ || echo "Qovluq tapilmadi"
+          chmod +x gradlew
+          # Butun fayllari ana qovluga cixaririq ki, GitHub onlari gorsun
+          cp -r . ../../ 2>/dev/null || cp -r . ../
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -36,11 +25,11 @@ jobs:
 
       - name: Build APK
         run: |
-          cd ${{ env.PROJECT_ROOT }}
+          chmod +x gradlew
           ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: hazir-tetbiq
+          name: kosmetik-tetbiqi-hazirdir
           path: "**/build/outputs/apk/debug/*.apk"
