@@ -7,18 +7,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract Project
+      - name: Extract and Locate Project
         run: |
-          # Yeni yuklediyin fayli acir
-          unzip -o kozmetik-envanteri.zip
+          # Movcud olan istenilen ZIP faylini acir
+          unzip -o *.zip || echo "ZIP acilmadi"
           
-          # Gradlew faylinin hansi qovluqda oldugunu tapir
-          GRADLE_DIR=$(find . -name "gradlew" -printf '%h\n' | head -n 1)
-          if [ -z "$GRADLE_DIR" ]; then echo "XETA: gradlew tapilmadi!"; exit 1; fi
+          # Gradlew faylini butun alt qovluqlarda axtarir
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
           
-          # Butun fayllari islek veziyyete getirir
-          chmod +x "$GRADLE_DIR/gradlew"
-          echo "PROJECT_PATH=$GRADLE_DIR" >> $GITHUB_ENV
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "XETA: Layihe fayllari ZIP-in icinde tapilmadi!"
+            echo "Hazirda olan fayllar:"
+            ls -R
+            exit 1
+          fi
+          
+          # Tapilan qovluga icaze verir ve yolunu yadda saxlayir
+          chmod +x "$GRADLEW_PATH"
+          echo "PROJECT_ROOT=$(dirname "$GRADLEW_PATH")" >> $GITHUB_ENV
+          echo "GRADLEW_EXECUTABLE=$GRADLEW_PATH" >> $GITHUB_ENV
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -29,11 +36,11 @@ jobs:
 
       - name: Build APK
         run: |
-          cd ${{ env.PROJECT_PATH }}
+          cd ${{ env.PROJECT_ROOT }}
           ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: kosmetik-tətbiqi
+          name: hazir-tetbiq
           path: "**/build/outputs/apk/debug/*.apk"
